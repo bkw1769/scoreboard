@@ -33,6 +33,7 @@ class ScoreboardProvider with ChangeNotifier {
     }
     _checkSetWin();
     notifyListeners();
+    changeScore(isLeft, 1);
   }
 
   void decrementScore(bool isLeft) {
@@ -96,6 +97,16 @@ class ScoreboardProvider with ChangeNotifier {
       timestamp: '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
       date: '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')}',
     ));
+    notifyListeners();
+  }
+
+  void changeScore(bool isLeft, int delta) {
+    if (isLeft) {
+      _leftScore = (_leftScore + delta).clamp(0, 99);  // 0-99 범위로 제한
+    } else {
+      _rightScore = (_rightScore + delta).clamp(0, 99);
+    }
+    _checkSetWin();  // 승리 조건 체크
     notifyListeners();
   }
 

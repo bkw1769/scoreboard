@@ -14,98 +14,64 @@ class ScoreboardScreen extends StatelessWidget {
     return Scaffold(
       body: Consumer3<ScoreboardProvider, TimerProvider, SettingsProvider>(
         builder: (context, scoreboard, timer, settings, child) {
+          // 현재 위치에 따른 팀 스코어 결정
+          final leftScore = settings.isCourtReversed ?
+          scoreboard.rightScore : scoreboard.leftScore;
+          final rightScore = settings.isCourtReversed ?
+          scoreboard.leftScore : scoreboard.rightScore;
+          final leftSetScore = settings.isCourtReversed ?
+          scoreboard.rightSetScore : scoreboard.leftSetScore;
+          final rightSetScore = settings.isCourtReversed ?
+          scoreboard.leftSetScore : scoreboard.rightSetScore;
+
           return Stack(
             children: [
               // 메인 스코어보드
               Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => scoreboard.incrementScore(true),
-                      child: Container(
-                        color: settings.leftColor,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '팀 A',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: settings.leftColor == Colors.black ? Colors.white : Colors.black,
-                                    ),
-                                  ),
-                                  Text(
-                                    scoreboard.leftScore.toString(),
-                                    style: TextStyle(
-                                      fontSize: 120,
-                                      fontWeight: FontWeight.bold,
-                                      color: settings.leftColor == Colors.black ? Colors.white : Colors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (settings.showSetScore)
-                              Padding(
-                                padding: EdgeInsets.all(16),
-                                child: SetScoreDisplay(
-                                  isLeft: true,
-                                  score: scoreboard.leftSetScore,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                    child: _buildScorePanel(
+                      context: context,
+                      score: leftScore,
+                      setScore: leftSetScore,
+                      isLeft: true,
+                      teamName: settings.isCourtReversed ? '팀 B' : '팀 A',
+                      backgroundColor: settings.leftColor,
+                      onScoreChange: (int delta) {
+                        scoreboard.changeScore(!settings.isCourtReversed, delta);
+                      },
+                      settings: settings,
                     ),
                   ),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => scoreboard.incrementScore(false),
-                      child: Container(
-                        color: settings.rightColor,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '팀 B',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: settings.rightColor == Colors.white ? Colors.black : Colors.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    scoreboard.rightScore.toString(),
-                                    style: TextStyle(
-                                      fontSize: 120,
-                                      fontWeight: FontWeight.bold,
-                                      color: settings.rightColor == Colors.white ? Colors.black : Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (settings.showSetScore)
-                              Padding(
-                                padding: EdgeInsets.all(16),
-                                child: SetScoreDisplay(
-                                  isLeft: false,
-                                  score: scoreboard.rightSetScore,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                    child: _buildScorePanel(
+                      context: context,
+                      score: rightScore,
+                      setScore: rightSetScore,
+                      isLeft: false,
+                      teamName: settings.isCourtReversed ? '팀 A' : '팀 B',
+                      backgroundColor: settings.rightColor,
+                      onScoreChange: (int delta) {
+                        scoreboard.changeScore(settings.isCourtReversed, delta);
+                      },
+                      settings: settings,
                     ),
                   ),
                 ],
+              ),
+
+              // 코트 체인지 버튼
+              Positioned(
+                top: 10,
+                left: 10,
+                child:IconButton(
+                  icon: Icon(
+                    Icons.sync,
+                    color: Colors.white,
+                  ),
+                  onPressed: settings.toggleCourtPosition,
+                  tooltip: '코트 체인지',
+                ),
               ),
 
               // 타이머
@@ -136,6 +102,71 @@ class ScoreboardScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildScorePanel({
+    required BuildContext context,
+    required int score,
+    required int setScore,
+    required bool isLeft,
+    required String teamName,
+    required Color backgroundColor,
+    required Function(int) onScoreChange,
+    required SettingsProvider settings,
+  }) {
+    return Container(
+      color: backgroundColor,
+      child: GestureDetector(
+        onVerticalDragEnd: (details) {
+          final velocity = details.velocity.pixelsPerSecond.dy;
+          if (velocity.abs() > 100) {  // 최소 속도 임계값
+            if (velocity > 0) {  // 아래로 슬라이드
+              onScoreChange(-1);
+            } else {  // 위로 슬라이드
+              onScoreChange(1);
+            }
+          }
+        },
+        onVerticalDragUpdate: (details) {
+          // 드래그 중에 시각적 피드백을 위한 로직 추가 가능
+        },
+        child: Column(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    teamName,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: backgroundColor == Colors.black ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  Text(
+                    score.toString(),
+                    style: TextStyle(
+                      fontSize: 120,
+                      fontWeight: FontWeight.bold,
+                      color: backgroundColor == Colors.black ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (settings.showSetScore)
+              Container(
+                alignment: isLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+                child: SetScoreDisplay(
+                  isLeft: isLeft,
+                  score: setScore,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -8,10 +8,13 @@ class GameTimer extends StatelessWidget {
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, child) {
         return Container(
-          padding: EdgeInsets.only(top: 18, left: 10, right: 10, bottom: 10),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(20),
+          padding: const EdgeInsets.only(top: 5, left: 10, right: 10, bottom: 10),
+          decoration: const BoxDecoration(
+            color: Colors.black,  // 배경색 검정
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(20), // 오른쪽 하단만 둥글게
+              bottomRight: Radius.circular(20), // 왼쪽 하단만 둥글게
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
